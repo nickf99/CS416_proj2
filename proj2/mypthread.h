@@ -1,6 +1,6 @@
 // File:	mypthread_t.h
 
-// List all group member's name:
+// List all group member's name: Michael Nguyen
 // username of iLab:
 // iLab Server:
 
@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ucontext.h>
 
 typedef uint mypthread_t;
 
@@ -31,6 +32,16 @@ typedef struct threadControlBlock {
 	// And more ...
 
 	// YOUR CODE HERE
+	mypthread_t TID;
+
+	int status;
+	ucontext_t *context;
+
+	int priority;
+	void *creatorThread;
+	void *createdThread;
+
+	threadList runQueue;
 } tcb;
 
 /* mutex struct definition */
@@ -44,6 +55,11 @@ typedef struct mypthread_mutex_t {
 // Feel free to add your own auxiliary data structures (linked list or queue etc...)
 
 // YOUR CODE HERE
+typedef struct threadQueue {
+	tcb thread;
+	struct threadQueue *next;
+
+}threadList;
 
 
 /* Function Declarations: */
