@@ -34,14 +34,15 @@ typedef struct threadControlBlock {
 	// YOUR CODE HERE
 	mypthread_t TID;
 
+	//0 = ready state, 1 = yield state, 2 = exit state, 3 = join state, 4 = wait state, 5 is the waiting for mutex state
 	int status;
-	ucontext_t *context;
+	ucontext_t context;
 
 	int priority;
 	void *creatorThread;
 	void *createdThread;
 
-	threadList runQueue;
+	struct threadControlBlock *next;
 } tcb;
 
 /* mutex struct definition */
@@ -56,13 +57,14 @@ typedef struct mypthread_mutex_t {
 
 // YOUR CODE HERE
 typedef struct threadQueue {
-	tcb thread;
+	tcb *thread;
 	struct threadQueue *next;
 
 }threadList;
 
 
 /* Function Declarations: */
+
 
 /* create a new thread */
 int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void
