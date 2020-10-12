@@ -1,6 +1,6 @@
 // File:	mypthread.c
 
-// List all group member's name:
+// List all group member's name:Michael Nguyen
 // username of iLab:
 // iLab Server:
 
@@ -8,16 +8,56 @@
 
 // INITAILIZE ALL YOUR VARIABLES HERE
 // YOUR CODE HERE
-
+mypthread_t tidCount = 0; //keeps track of the number of threads and their IDs
+#define StackSize 16384
+#define ready 0
+#define yield 1 
+#define exit 2
+#define join 3
+#define wait 4
+#define waitMutex 5
 
 /* create a new thread */
-int mypthread_create(mypthread_t * thread, pthread_attr_t * attr,
-                      void *(*function)(void*), void * arg) {
+int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
        // create Thread Control Block
        // create and initialize the context of this thread
        // allocate space of stack for this thread to run
        // after everything is all set, push this thread int
        // YOUR CODE HERE
+
+	//////INITIALIZES THE TCB
+	tcb *newTCB = (tcb *)malloc(sizeof(tcb));
+	newTCB->TID = tidCount;	//initialize the thread id
+	tidCount++;	//corrects the number of threads
+	
+	newTCB->status = ready;	//initialize the status
+
+
+	// create the context to add to tcb
+	memset(&newTCB, 0, sizeof(newTCB));
+	getcontext(&newTCB);
+	newTCB->context.uc_stack.ss_sp = malloc(StackSize);
+	newTCB->context.uc_stack.ss_size = StackSize;
+	newTCB->context.uc_stack.ss_flags = 0;
+	newTCB->context.uc_link = NULL;	
+	makecontext(&newTCB, (void *)function, 1, arg);
+	//Above is to put the context in the newTCB
+
+	newTCB->priority = 0; //priority is put in newTCB
+
+	newTCB->creatorThread = NULL;	//creatorThread is added into newTCB
+	newTCB->createdThread = NULL;	//createdThread is added into newTCB
+
+	newTCB->next = NULL; //initialize the next to NULL and add it into to the list in the next section
+	//////INITIALIZES THE TCB
+
+
+
+	////ADDS THE THREAD INTO QUEUE
+	
+	
+
+	////ADDS THE THREAD INTO QUEUE
 
     return 0;
 };
