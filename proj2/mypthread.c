@@ -17,6 +17,13 @@ mypthread_t tidCount = 0; //keeps track of the number of threads and their IDs
 #define wait 4
 #define waitMutex 5
 
+#define QUANTUM 10000 //10 milliseconds
+
+tcb *head = NULL; //points to the node containing the thread that is currently running
+
+int OGThreadCreated = 0;
+int doNotInterrupt = 0;
+
 /* create a new thread */
 int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
        // create Thread Control Block
@@ -25,13 +32,13 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
        // after everything is all set, push this thread int
        // YOUR CODE HERE
 
-	//////INITIALIZES THE TCB
+	doNotInterrupt = 1; // makes it so the timer doesn't mess up the creation
+	//////INITIALIZES THE NEW TCB
 	tcb *newTCB = (tcb *)malloc(sizeof(tcb));
 	newTCB->TID = tidCount;	//initialize the thread id
 	tidCount++;	//corrects the number of threads
 	
 	newTCB->status = ready;	//initialize the status
-
 
 	// create the context to add to tcb
 	memset(&newTCB, 0, sizeof(newTCB));
@@ -44,20 +51,56 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
 	//Above is to put the context in the newTCB
 
 	newTCB->priority = 0; //priority is put in newTCB
-
 	newTCB->creatorThread = NULL;	//creatorThread is added into newTCB
 	newTCB->createdThread = NULL;	//createdThread is added into newTCB
 
-	newTCB->next = NULL; //initialize the next to NULL and add it into to the list in the next section
+	newTCB->elapsed = 0; //no quantums have been elapsed for this thread yet
+	newTCB->next = NULL; //initialize next to NULL and add it into to the list in the next section
+	
+
+	addToQueue(newTCB);	//ADDS THE THREAD INTO QUEUE
 	//////INITIALIZES THE TCB
 
 
+	//////CREATING THE ORIGINAL PROCESS THREAD
+	if (OGThreadCreated == 0){	
+		//if the original process has not been created yet
+		//then create the thread and add it to the queue
 
-	////ADDS THE THREAD INTO QUEUE
-	
-	
+		tcb *OGThread = (tcb *)malloc(sizeof(tcb));
+		OGThread->TID = tidCount; //thread id 
+		tidCount++; //there is 1 thread now
+		OGThread->status = ready;
 
-	////ADDS THE THREAD INTO QUEUE
+
+		//create the context for OGThread
+		memset(&OGThread, 0, sizeof(OGThread));
+		getcontext(&OGThread);
+		OGThread->context.uc_link = NULL;	//**********subject to change
+		//create the context for OGThread
+
+
+		//fill in the rest of the tcb
+		OGThread->priority = 0;
+		OGThread->creatorThread = NULL;
+		OGThread->createdThread = NULL;
+		OGThread->elapsed = 0;
+		OGThread->next = NULL;
+		//fill in the rest of the tcb
+
+		addToQueue(OGThread); //OGThread is now the head of the list 
+
+		OGThreadCreated = 1;
+
+		//Now that there are two threads we should start the timer
+
+
+
+	}	
+	//////CREATING THE ORIGINAL PROCESS THREAD
+
+
+	doNotInterrupt = 0; //makes it so the scheduler works
 
     return 0;
 };
@@ -173,3 +216,23 @@ static void sched_mlfq() {
 // Feel free to add any other functions you need
 
 // YOUR CODE HERE
+
+void addToQueue(tcb *newTCB){	//adds a new TCB to the node after the one currently running
+
+	if (head == NULL){	//if the list is empty then add it to the list and return
+		head = newTCB; 
+		return; //list will only consist of head
+	}
+	if (head->next == NULL){ //if the node after the one currently running is NULL then add it to the end of the list
+		head->next = newTCB;
+		return; //list will look like: head -----> newTCB
+	}
+
+	//make it so the list looks like: 
+	//head -----> newTCB -----> temp -----> the rest of the list
+	tcb *temp = head->next; 
+	head->next = newTCB;
+	newTCB->next = temp;
+	
+	return;
+}
