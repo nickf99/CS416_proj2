@@ -17,7 +17,10 @@ mypthread_t tidCount = 0; //keeps track of the number of threads and their IDs
 #define wait 4
 #define waitMutex 5
 
-#define QUANTUM 10000 //10 milliseconds
+#define QUANTUM 20000 //20 milliseconds
+struct itimerval timer; 
+
+struct sigaction sigToScheduler;
 
 tcb *head = NULL; //points to the node containing the thread that is currently running
 
@@ -92,15 +95,20 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
 
 		OGThreadCreated = 1;
 
-		//Now that there are two threads we should start the timer
 
+		/////////INITIALIZE THE SIGNAL HANDLER
+		sigToScheduler.sa_handler = schedule;
+		sigaction(SIGALRM, &schedule, NULL);
 
-
+		/////////START THE TIMER
+		timer.it_value.tv_sec = 0;
+  		timer.it_value.tv_usec = QUANTUM; 
+		timer.it_interval = timer.it_value;
 	}	
 	//////CREATING THE ORIGINAL PROCESS THREAD
 
 
-	doNotInterrupt = 0; //makes it so the scheduler works
+	doNotInterrupt = 0; //makes it so the scheduler does not interrupt in these areas
 
     return 0;
 };
@@ -187,6 +195,12 @@ static void schedule() {
 	// 		sched_mlfq();
 
 	// YOUR CODE HERE
+
+	if (doNotInterrupt == 1){ //if the current running code does not want to be interrupted then return to it
+		return;
+	}
+
+
 
 // schedule policy
 #ifndef MLFQ
