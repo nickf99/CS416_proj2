@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ucontext.h>
+#include <signal.h>
+#include <sys/time.h>
 
 typedef uint mypthread_t;
 
@@ -36,13 +38,15 @@ typedef struct threadControlBlock {
 
 	//0 = ready state, 1 = yield state, 2 = exit state, 3 = join state, 4 = wait state, 5 is the waiting for mutex state
 	int status;
-	ucontext_t context;
+	ucontext_t context;	//contains the context for the thread
 
 	int priority;
 	void *creatorThread;
 	void *createdThread;
 
-	struct threadControlBlock *next;
+	int elapsed; //elapsed quantums
+
+	struct threadControlBlock *next; //ptr to next thread in the list
 } tcb;
 
 /* mutex struct definition */
