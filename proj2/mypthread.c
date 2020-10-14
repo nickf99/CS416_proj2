@@ -72,7 +72,7 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
 
 		tcb *OGThread = (tcb *)malloc(sizeof(tcb));
 		OGThread->TID = tidCount; //thread id 
-		tidCount++; //there is 1 thread now
+		tidCount++; //there are 2 threads now
 		OGThread->status = ready;
 
 
@@ -100,10 +100,12 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
 		sigToScheduler.sa_handler = schedule;
 		sigaction(SIGALRM, &schedule, NULL);
 
-		/////////START THE TIMER
-		timer.it_value.tv_sec = 0;
+		/////////START THE TIMER ***********maybe not here, might be in the scheduler to start the timer
+		timer.it_value.tv_sec = 0; 
   		timer.it_value.tv_usec = QUANTUM; 
 		timer.it_interval = timer.it_value;
+
+		//raise(SIGALRM); //maybe just signal to go to scheduler after the threads are created 
 	}	
 	//////CREATING THE ORIGINAL PROCESS THREAD
 
