@@ -38,20 +38,28 @@ typedef struct threadControlBlock {
 
 	//0 = ready state, 1 = yield state, 2 = exit state, 3 = join state, 4 = wait state, 5 is the waiting for mutex state
 	int status;
-	ucontext_t context;	//contains the context for the thread
+	ucontext_t *context;	//contains the context for the thread
 
 	int priority;
-	void *creatorThread;
-	void *createdThread;
+	void *joinValue;
+	void *retValue;
 
 	int elapsed; //elapsed quantums
 
 	struct threadControlBlock *next; //ptr to next thread in the list
+	struct threadControlBlock *joinQueue; //ptr to the first thread that calls join for this thread
+	struct threadControlBlock *mutexQueue; //ptr to threads that are waiting on this thread to unlock a mutex
 } tcb;
 
 /* mutex struct definition */
 typedef struct mypthread_mutex_t {
 	/* add something here */
+	int locked; 
+	int holder;
+	int initialized;
+	int ID;
+	mypthread_mutex_t *mutexList; //list of mutexes
+	tcb *mutexQueue; //threads waiting on the mutex to unlock
 
 	// YOUR CODE HERE
 } mypthread_mutex_t;
