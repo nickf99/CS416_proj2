@@ -213,6 +213,29 @@ int mypthread_join(mypthread_t thread, void **value_ptr) { //cannot join a threa
 		ptr = ptr->next;
 	}// *******may have to implement the waitMutex list here as well 
 
+	//for all mutexes in the mutexList 
+	if (waitingOn == NULL){
+		mypthread_mutex_t *mutexPtr = mutexHead;
+		while(mutexPtr != NULL){
+			ptr = mutexPtr->mutexQueue;
+			while(ptr != NULL){
+				if (ptr->TID == thread){
+					break;
+				}
+
+				ptr = ptr->joinQueue;
+			}
+			if (ptr != NULL){
+				waitingOn = ptr;
+				break;
+			}
+
+			mutexPtr = mutexPtr->mutexList;
+		}
+	}
+
+	
+
 	if (waitingOn == NULL){ //this means that thread was not found 
 		doNotInterrupt = 0;
 		return -1;
@@ -266,7 +289,7 @@ int mypthread_mutex_init(mypthread_mutex_t *mutex,
 	}
 	else {
 		while (ptr->mutexList != NULL){
-			ptr = ptr->mutexList
+			ptr = ptr->mutexList;
 		}
 		ptr->mutexList = mutex;
 	}
@@ -510,15 +533,17 @@ int mypthread_mutex_destroy(mypthread_mutex_t *mutex) {
 	mutex->mutexQueue = NULL;
 
 	mypthread_mutex_t *ptr = mutexHead;
+	mypthread_mutex_t *temp = NULL;
 
 	if (ptr->ID == mutex->ID){
-		
+		mutexHead = mutexHead->mutexList;
 	}
 	else {
 		while (ptr->mutexList->ID != mutex->ID){
 			ptr = ptr->mutexList;
 		}
-		
+		ptr->mutexList->mutexList = temp;
+		ptr->mutexList = temp;
 	}
 	
 
