@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ucontext.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/time.h>
 
@@ -58,7 +59,7 @@ typedef struct mypthread_mutex_t {
 	int holder;
 	int initialized;
 	int ID;
-	mypthread_mutex_t *mutexList; //list of mutexes
+	struct mypthread_mutex_t *mutexList; //list of mutexes
 	tcb *mutexQueue; //threads waiting on the mutex to unlock
 
 	// YOUR CODE HERE
@@ -76,7 +77,12 @@ typedef struct threadQueue {
 
 
 /* Function Declarations: */
-
+void addToQueue(tcb *newTCB);
+void sortCRintoList();
+void yieldInsert();
+void exiting();
+static void sched_stcf();
+static void schedule();
 
 /* create a new thread */
 int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void
