@@ -1,8 +1,8 @@
 // File:	mypthread.c
 
-// List all group member's name:Michael Nguyen
-// username of iLab:
-// iLab Server:
+// List all group member's name:Michael Nguyen, Nicholas Farinella
+// username of iLab:mnn45
+// iLab Server:atlas.cs.rutgers.edu
 
 #include "mypthread.h"
 
@@ -45,7 +45,7 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
        // after everything is all set, push this thread int
        // YOUR CODE HERE
 
-
+	
 	if (OGThreadCreated == 0){ //initialize the cleanup context. this will run when a thread ends
 		memset(&cleanup, 0, sizeof(cleanup));
 		getcontext(&cleanup);
@@ -119,7 +119,7 @@ int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*functi
 		/////////INITIALIZE THE SIGNAL HANDLER
 		memset(&sigToScheduler, 0, sizeof(sigToScheduler));
 		sigToScheduler.sa_handler = schedule;
-		sigaction(SIGALRM, &schedule, NULL);
+		sigaction(SIGALRM, &sigToScheduler, NULL);
 
 		
 		//start the timer 
@@ -308,7 +308,7 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
         // context switch to the scheduler thread
 
         // YOUR CODE HERE
-
+	
 	if (OGThreadCreated == 0){
 		//initialize cleanup context
 		memset(&cleanup, 0, sizeof(cleanup));
@@ -349,7 +349,7 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
 		/////////INITIALIZE THE SIGNAL HANDLER
 		memset(&sigToScheduler, 0, sizeof(sigToScheduler));
 		sigToScheduler.sa_handler = schedule;
-		sigaction(SIGALRM, &schedule, NULL);
+		sigaction(SIGALRM, &sigToScheduler, NULL);
 
 		//start the timer 
 		timer.it_value.tv_sec = 0;
@@ -369,6 +369,7 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
 	tcb *ptr = NULL;
 
 	while (__atomic_test_and_set((volatile void *)&mutex->locked,__ATOMIC_RELAXED)){ //if true then mutex is locked
+		
 		doNotInterrupt = 1;
 
 		//add current running to the mutex queue
@@ -376,6 +377,7 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
 			mutex->mutexQueue = currentRunning;
 		}
 		else {
+			/*
 			ptr = mutex->mutexQueue;
 			if (ptr->TID != currentRunning->TID){
 				while (ptr->mutexQueue != NULL){
@@ -389,6 +391,11 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
 					ptr->mutexQueue = currentRunning;
 				}
 			}
+			*/
+			ptr = mutex->mutexQueue;
+			mutex->mutexQueue = currentRunning;
+			currentRunning->mutexQueue = ptr;
+
 		}
 		//currentRunning is now in the mutexQueue
 		currentRunning->status = waitMutex;
@@ -440,6 +447,7 @@ int mypthread_mutex_unlock(mypthread_mutex_t *mutex) {
 	tcb *temp = NULL;
 	tcb *readyPtr = NULL;
 	while (ptr != NULL){
+		
 		
 		if (head == NULL || ptr->elapsed <= head->elapsed){ //if the thread should be placed at the head
 			ptr->next = head;
@@ -532,18 +540,18 @@ int mypthread_mutex_destroy(mypthread_mutex_t *mutex) {
 	}
 	mutex->mutexQueue = NULL;
 
-	mypthread_mutex_t *ptr = mutexHead;
-	mypthread_mutex_t *temp = NULL;
+	mypthread_mutex_t *mptr = mutexHead;
+	mypthread_mutex_t *mtemp = NULL;
 
-	if (ptr->ID == mutex->ID){
+	if (mptr->ID == mutex->ID){
 		mutexHead = mutexHead->mutexList;
 	}
 	else {
-		while (ptr->mutexList->ID != mutex->ID){
-			ptr = ptr->mutexList;
+		while (mptr->mutexList->ID != mutex->ID){
+			mptr = mptr->mutexList;
 		}
-		ptr->mutexList->mutexList = temp;
-		ptr->mutexList = temp;
+		mtemp = mptr->mutexList->mutexList;
+		mptr->mutexList = mtemp;
 	}
 	
 
@@ -578,8 +586,8 @@ static void schedule() {
 	}
 	
 	//Stops the timer
-	timer.it_value.tv_sec =     0;
-  	timer.it_value.tv_usec =    0;  
+	timer.it_value.tv_sec = 0;
+  	timer.it_value.tv_usec = 0;  
 	timer.it_interval = timer.it_value;
 	setitimer(ITIMER_REAL, &timer, NULL);
 	//Stops the timer
