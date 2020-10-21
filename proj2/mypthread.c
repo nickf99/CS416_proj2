@@ -37,6 +37,9 @@ int doNotInterrupt = 0;
 
 ucontext_t cleanup;
 
+tcb *oldCurrentRunning = NULL;
+
+
 /* create a new thread */
 int mypthread_create(mypthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
        // create Thread Control Block
@@ -270,12 +273,16 @@ int mypthread_mutex_init(mypthread_mutex_t *mutex,
 
 	// YOUR CODE HERE
 
-	if (mutex != NULL){ //if the mutex has already been initialized
+	//if (mutex != NULL){ //if the mutex has already been initialized
+	//	return -1;
+	//}
+	if (mutex->initialized == 1){
 		return -1;
 	}
 
 	doNotInterrupt = 1;
-	mutex = (mypthread_mutex_t *)malloc(sizeof(mypthread_mutex_t)); //allocate memory
+	//mutex = (mypthread_mutex_t *)malloc(sizeof(mypthread_mutex_t)); //allocate memory
+
 	mutex->initialized = 1; //the mutex is available
 	mutex->locked = 0;	  //the mutex is not locked
 	mutex->holder = -1;	  //nothing is holding the mutex right now
@@ -403,13 +410,14 @@ int mypthread_mutex_lock(mypthread_mutex_t *mutex) {
 		doNotInterrupt = 0;
 		raise(SIGALRM);
 	}
-
+	doNotInterrupt = 1;
 
 	if(mutex == NULL || mutex->initialized == 0){ 
 		doNotInterrupt = 0;
     	return -1;
   	}
 
+	
 	mutex->holder = currentRunning->TID;
 
 
@@ -448,7 +456,7 @@ int mypthread_mutex_unlock(mypthread_mutex_t *mutex) {
 	tcb *readyPtr = NULL;
 	while (ptr != NULL){
 		
-		
+		readyPtr = head;
 		if (head == NULL || ptr->elapsed <= head->elapsed){ //if the thread should be placed at the head
 			ptr->next = head;
 			head = ptr;
@@ -462,7 +470,7 @@ int mypthread_mutex_unlock(mypthread_mutex_t *mutex) {
 				readyPtr = readyPtr->next;
 			}
 			
-			if (readyPtr->next = NULL){ //if readyPtr is at the end
+			if (readyPtr->next == NULL){ //if readyPtr is at the end
 				readyPtr->next = ptr;
 			}
 			else {	//if readyPtr is somewhere in the middle
@@ -523,7 +531,7 @@ int mypthread_mutex_destroy(mypthread_mutex_t *mutex) {
 				readyPtr = readyPtr->next;
 			}
 			
-			if (readyPtr->next = NULL){ //if readyPtr is at the end
+			if (readyPtr->next == NULL){ //if readyPtr is at the end
 				readyPtr->next = ptr;
 			}
 			else {	//if readyPtr is somewhere in the middle
@@ -556,8 +564,8 @@ int mypthread_mutex_destroy(mypthread_mutex_t *mutex) {
 	
 
 	//free mutex so it can be reinitialized	
-	mypthread_mutex_t *tempMutex = mutex;
-	free(tempMutex); 
+	//mypthread_mutex_t *tempMutex = mutex;
+	//free(tempMutex); 
 	
 	doNotInterrupt = 0;
 
@@ -627,7 +635,7 @@ static void sched_stcf() {
 		}
 		else {	//the head has run for less time than the current running thread
 
-			tcb * oldCurrentRunning = currentRunning; //keeps track of the old current running 
+			oldCurrentRunning = currentRunning; //keeps track of the old current running 
 
 			sortCRintoList(); //ready queue and current running are updated here
 
@@ -659,7 +667,7 @@ static void sched_stcf() {
 		else {	//there is atleast one thread that has the same or higher priority (currentRunning->elapsed >= head-elapsed)
 
 			//put currentRunning in the queue after the last thread with the same elapsed
-			tcb *oldCurrentRunning = currentRunning;
+			oldCurrentRunning = currentRunning;
 
 			yieldInsert();
 
@@ -756,7 +764,7 @@ static void sched_stcf() {
 		*/
 
 		//get the next thread to run
-		tcb *oldCurrentRunning = currentRunning;
+		oldCurrentRunning = currentRunning;
 		currentRunning = head; 
 		head = head->next;
 		currentRunning->next = NULL;
@@ -774,7 +782,7 @@ static void sched_stcf() {
 	else if (currentRunning->status == waitMutex){ //current running threads is waiting on a mutex lock
 		
 		//run the next thread
-		tcb *oldCurrentRunning = currentRunning;
+		oldCurrentRunning = currentRunning;
 		currentRunning = head;
 		
 		
